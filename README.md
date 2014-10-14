@@ -1,6 +1,6 @@
 # PRismeLedDriver
 
-![PRismeLedDriver](http://i.imgur.com/JPGc4.jpg)
+![PRismeLedDriver](PRismeLedDriver.jpg)
 
 This sketch is for the LED driver project that uses a large IR sensor to detect an obstacle and light up a series of 32 LEDs.
 
