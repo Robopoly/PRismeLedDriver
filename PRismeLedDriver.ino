@@ -2,11 +2,9 @@
  Title:        PRismeLedDriver
  Description:  Control 32 LEDs using two TLC5925I LED drivers.
  Author:       Karl Kangur <karl.kangur@gmail.com>
- Version:      1.0
+ Version:      2.0
  Website:      http://robopoly.ch
 */
-
-#include <util/delay.h>
 
 uint8_t i = 0;
 uint16_t ir, norm;
@@ -18,60 +16,52 @@ uint16_t ir, norm;
 #define OE 4
 #define LE 3
 
-// define the low and high light limis
-#define LOW 150
-#define HIGH 600
+#define IR A8
 
-// helper functions
-#define port_ddr(port) (port-1)
-#define port_pin(port) (port-2)
-#define pin_mode(port, pin, mode) (*(port_ddr(&port)) = (*(&port-1) & (~(1 << pin))) | (mode << pin))
-#define digital_write(port, pin, value) (port = (port & (~(1 << pin))) | (value << pin))
+// define the low and high light limis
+#define LIGHT_LOW 150
+#define LIGHT_HIGH 600
 
 int leds;
 
 void setup()
 {
-  // clk #1 and #2
-  pin_mode(PORTB, CLK, 1);
-  // sdi #1
-  pin_mode(PORTB, SDI, 1);
-  // oe
-  pin_mode(PORTB, OE, 1);
-  // oe
-  pin_mode(PORTB, LE, 1);
+  pinMode(CLK, OUTPUT);
+  pinMode(SDI, OUTPUT);
+  pinMode(OE, OUTPUT);
+  pinMode(LE, OUTPUT);
   
   // When OE is active (low), the output drivers are enabled. When OE is high, all output drivers are turned OFF (blanked).
-  digital_write(PORTB, OE, 0);
+  digitalWrite(OE, LOW);
   // Serial data is transferred to the respective latch when LE is high. The data is latched when LE goes low.
-  digital_write(PORTB, LE, 1);
+  digitalWrite(LE, HIGH);
 }
   
 void loop()
 {
   // turn outputs off
-  digital_write(PORTB, OE, 1);
+  digitalWrite(OE, HIGH);
   
   // average 10 sensor values
   for(i = 0; i < 10; i++)
   {
-    ir = (ir * i + analogRead(PA(0))) / (i + 1);
+    ir = (ir * i + analogRead(IR)) / (i + 1);
   }
   
   // limit value
-  if(ir < LOW)
-    ir = LOW;
-  if(ir > HIGH)
-    ir = HIGH;
+  if(ir < LIGHT_LOW)
+    ir = LIGHT_LOW;
+  if(ir > LIGHT_HIGH)
+    ir = LIGHT_HIGH;
   
   // normalize over 100
-  norm = 100 * (ir - LOW) / (HIGH - LOW);
+  norm = 100 * (ir - LIGHT_LOW) / (LIGHT_HIGH - LIGHT_LOW);
   
   // use normalized value to light up leds
   leds = 32 * norm / 100;
   
   // limit output intensity
-  _delay_ms(32 - leds);
+  delay(32 - leds);
   
   // set up leds
   for(i = 0; i < 32; i++)
@@ -79,18 +69,18 @@ void loop()
     // set led value
     if(i < leds)
     {
-      digital_write(PORTB, SDI, 1);
+      digitalWrite(SDI, HIGH);
     }
     else
     {
-      digital_write(PORTB, SDI, 0);
+      digitalWrite(SDI, LOW);
     }
     // send clock
-    digital_write(PORTB, CLK, 1);
-    digital_write(PORTB, CLK, 0);
+    digitalWrite(CLK, HIGH);
+    digitalWrite(CLK, LOW);
   }
   // turn outputs on
-  digital_write(PORTB, OE, 0);
-  _delay_us(50);
+  digitalWrite(OE, LOW);
+  delayMicroseconds(50);
 }
 
